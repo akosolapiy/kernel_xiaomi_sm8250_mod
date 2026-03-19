@@ -96,6 +96,10 @@ echo "TARGET_DEVICE: $TARGET_DEVICE"
 if [ $KSU_ENABLE -eq 1 ]; then
     echo "KSU is enabled"
     curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
+    # Fix access_ok for kernel 4.19
+    if [ -f drivers/kernelsu/kpm/kpm.c ]; then
+        sed -i '/#include/a #include <linux/version.h>\n#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)\nstatic inline bool __ksu_access_ok(const void __user *addr, unsigned long size) { return access_ok(VERIFY_READ, addr, size); }\n#undef access_ok\n#define access_ok(addr, size) __ksu_access_ok(addr, size)\n#endif' drivers/kernelsu/kpm/kpm.c
+    fi
 else
     echo "KSU is disabled"
 fi
